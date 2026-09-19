@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Coffrio — Document partagé</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  form { display: flex; gap: 8px; margin-top: 16px; }
+  input { flex: 1; min-width: 0; font: inherit; font-size: 24px; letter-spacing: 8px; text-align: center; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; }
+  button, .btn { font: inherit; font-weight: 600; padding: 12px 18px; border-radius: 12px; border: 0; background: var(--text); color: var(--bg); cursor: pointer; text-decoration: none; display: inline-block; }
+  .err { color: #E5252A; min-height: 1.5em; }
+  .doc img { max-width: 100%; border-radius: 8px; border: 0.5px solid var(--line); }
+  .doc iframe { width: 100%; height: 75vh; border: 0.5px solid var(--line); border-radius: 8px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <p class="lang">Coffrio · document partagé / shared document</p>
+
+  <section id="ask">
+    <h1>Code d’accès</h1>
+    <p class="muted">Saisissez le code à 4 chiffres transmis par l’expéditeur.<br>Enter the 4-digit code you received from the sender.</p>
+    <form id="form" autocomplete="off">
+      <input id="code" inputmode="numeric" pattern="\d{4}" maxlength="4" required aria-label="Code d’accès / Access code">
+      <button type="submit">Ouvrir</button>
+    </form>
+    <p class="err" id="err" role="alert"></p>
+  </section>
+
+  <section id="doc" class="doc" hidden>
+    <h1 id="title"></h1>
+    <p class="muted" id="meta"></p>
+    <div id="view"></div>
+    <p><a id="dl" class="btn" hidden>Télécharger / Download</a></p>
+  </section>
+
+  <p class="muted" style="margin-top:48px">Lien sécurisé à durée limitée. Cinq codes erronés le bloquent. · <a href="privacy.html">Confidentialité / Privacy</a></p>
+</main>
+<script>
+  // Le jeton est dans le fragment (#…) : jamais envoyé au serveur de cette page ni dans le Referer.
+  const token = location.hash.slice(1);
+  const $ = (id) => document.getElementById(id);
+  if (!/^[0-9a-f]{32}$/.test(token)) $('err').textContent = 'Lien invalide. / Invalid link.';
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('err').textContent = '';
+    try {
+      const r = await fetch('https://lwoewwskwgvlriybhnsr.supabase.co/functions/v1/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, code: $('code').value.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erreur');
+      $('ask').hidden = true;
+      $('doc').hidden = false;
+      $('title').textContent = d.title;
+      $('meta').textContent = 'Disponible jusqu’au ' + new Date(d.expiresAt).toLocaleDateString('fr-FR');
+      const view = $('view');
+      if (d.mime.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = d.url; img.alt = d.title;
+        view.append(img);
+      } else {
+        const frame = document.createElement('iframe');
+        frame.src = d.url; frame.title = d.title;
+        view.append(frame);
+      }
+      if (d.allowDownload) { $('dl').href = d.url; $('dl').hidden = false; }
+    } catch (err) {
+      $('err').textContent = err.message === 'Failed to fetch' ? 'Connexion impossible. / Network error.' : err.message;
+    }
+  });
+</script>
+</body>
+</html>
