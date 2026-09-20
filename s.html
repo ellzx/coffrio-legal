@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="style.css">
 <style>
   form { display: flex; gap: 8px; margin-top: 16px; }
-  input { flex: 1; min-width: 0; font: inherit; font-size: 24px; letter-spacing: 8px; text-align: center; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; }
+  input { flex: 1; min-width: 0; font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; letter-spacing: 0; text-align: center; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; }
   button, .btn { font: inherit; font-weight: 600; padding: 12px 18px; border-radius: 12px; border: 0; background: var(--text); color: var(--bg); cursor: pointer; text-decoration: none; display: inline-block; }
   .err { color: #E5252A; min-height: 1.5em; }
   .doc img { max-width: 100%; border-radius: 8px; border: 0.5px solid var(--line); }
@@ -23,9 +23,9 @@
 
   <section id="ask">
     <h1>Code d’accès</h1>
-    <p class="muted">Saisissez le code à 4 chiffres transmis par l’expéditeur.<br>Enter the 4-digit code you received from the sender.</p>
+    <p class="muted">Collez le code d’accès transmis par l’expéditeur.<br>Paste the access code you received from the sender.</p>
     <form id="form" autocomplete="off">
-      <input id="code" inputmode="numeric" pattern="\d{4}" maxlength="4" required aria-label="Code d’accès / Access code">
+      <input id="code" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" pattern="[0-9a-fA-F\-]{36}|\d{4}" maxlength="36" required aria-label="Code d’accès / Access code">
       <button type="submit">Ouvrir</button>
     </form>
     <p class="err" id="err" role="alert"></p>
@@ -53,7 +53,7 @@
       const r = await fetch('https://lwoewwskwgvlriybhnsr.supabase.co/functions/v1/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, code: $('code').value.trim() }),
+        body: JSON.stringify({ token, code: $('code').value.trim().toLowerCase() }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Erreur');
